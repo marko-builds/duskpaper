@@ -17,24 +17,8 @@ alacritty, foot, ghostty, wezterm, modern xterm). If colors look blocky,
 make sure COLORTERM=truecolor.
 """
 
-import argparse
-import os
-import select
-import signal
-import sys
-import termios
-import tty
 
 import numpy as np
-
-# ── ANSI plumbing ────────────────────────────────────────────────────────────
-ESC = "\x1b"
-HIDE_CURSOR = f"{ESC}[?25l"
-SHOW_CURSOR = f"{ESC}[?25h"
-ALT_SCREEN = f"{ESC}[?1049h"
-MAIN_SCREEN = f"{ESC}[?1049l"
-HOME = f"{ESC}[H"
-UPPER_HALF = "▀"  # ▀  fg paints the top pixel, bg paints the bottom
 
 # ── colour palettes ──────────────────────────────────────────────────────────
 # Colour follows altitude within a hanging curtain (0 = top, 1 = bottom). Each
@@ -298,92 +282,15 @@ class Sky:
         return img.astype(np.uint8)
 
 
-def render(img, rows, cols):
-    """Pack the pixel buffer into ▀ half-block lines with run-length colour."""
-    # Quantize a touch: longer colour runs → fewer escape codes → faster.
-    q = (img >> 2) << 2
-    top = q[0::2]   # (rows, cols, 3) → upper pixel of each cell  (foreground)
-    bot = q[1::2]   # lower pixel of each cell                    (background)
-
-    out = [HOME]
-    last_fg = last_bg = None
-    for r in range(rows):
-        tr = top[r]
-        br = bot[r]
-        for c in range(cols):
-            fr, fg_, fb = tr[c]
-            br_, bg_, bb = br[c]
-            fg = (fr, fg_, fb)
-            bg = (br_, bg_, bb)
-            if fg != last_fg:
-                out.append(f"{ESC}[38;2;{fr};{fg_};{fb}m")
-                last_fg = fg
-            if bg != last_bg:
-                out.append(f"{ESC}[48;2;{br_};{bg_};{bb}m")
-                last_bg = bg
-            out.append(UPPER_HALF)
-        out.append(f"{ESC}[0m")        # reset at line end avoids bg bleed on wrap
-        last_fg = last_bg = None
-    return "".join(out)
-
-
-def main():
-    ap = argparse.ArgumentParser(description="Aurora borealis terminal screensaver.")
-    ap.add_argument("--fps", type=float, default=24.0, help="target frames per second")
-    ap.add_argument("--calm", action="store_true", help="slower, gentler drift")
-    ap.add_argument("--palette", default="aurora", choices=list(PALETTES),
-                    help="colour theme (try 'nord')")
-    args = ap.parse_args()
-
-    fd = sys.stdin.fileno()
-    isatty = sys.stdin.isatty()
-    old_term = termios.tcgetattr(fd) if isatty else None
-
-    stop = {"now": False}
-    signal.signal(signal.SIGINT, lambda *_: stop.__setitem__("now", True))
-
-    w = sys.stdout.write
-    w(ALT_SCREEN + HIDE_CURSOR)
-    w(f"{ESC}[2J")
-    sys.stdout.flush()
-
-    try:
-        if isatty:
-            tty.setcbreak(fd)
-        cols, rows = os.get_terminal_size()
-        sky = Sky(cols, rows, calm=args.calm, palette=args.palette)
-
-        dt = 1.0 / max(1.0, args.fps)
-        t = 0.0
-        # Drive time off a wall clock would be smoother, but Date/time helpers
-        # are flaky here; a fixed step gives a steady, reproducible drift.
-        while not stop["now"]:
-            # Handle resize on the fly.
-            nc, nr = os.get_terminal_size()
-            if (nc, nr) != (cols, rows):
-                cols, rows = nc, nr
-                sky = Sky(cols, rows, calm=args.calm, palette=args.palette)
-                w(f"{ESC}[2J")
-
-            img = sky.frame(t)
-            w(render(img, rows, cols))
-            sys.stdout.flush()
-            t += dt
-
-            # Sleep via select so a keypress wakes us instantly.
-            if isatty:
-                ready, _, _ = select.select([fd], [], [], dt)
-                if ready and sys.stdin.read(1).lower() == "q":
-                    break
-            else:
-                import time
-                time.sleep(dt)
-    finally:
-        if isatty and old_term is not None:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_term)
-        w(SHOW_CURSOR + MAIN_SCREEN)
-        sys.stdout.flush()
 
 
 if __name__ == "__main__":
-    main()
+    eng = Sky(cols=320, rows=100, loop_period=60.0)
+    a = eng.frame(0.0).astype(int)
+    b = eng.frame(60.0).astype(int)
+    delta = int(abs(a - b).max())
+    print(f"aurora seamless check: max |frame(0)-frame(period)| = {delta} (<=1 ok)")
+    assert delta <= 1
+    c = eng.frame(7.0).astype(int)
+    assert not (a == c).all(), "scene is not moving"
+    print("aurora motion check: ok")

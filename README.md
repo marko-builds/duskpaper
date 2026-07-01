@@ -40,9 +40,13 @@ duskpaper set silk --seed 3    # your own variant of the scene
 duskpaper off                  # back to your static wallpaper
 ```
 
-`set` detects your focused monitor via `hyprctl`, renders the loop once
-(about 10 to 20 minutes for a 1440p-class monitor, then cached), and runs it
-as your wallpaper via mpvpaper.
+`set` detects your focused monitor via `hyprctl` (on other wlroots
+compositors pass `--res WxH` explicitly), renders the loop once, caches it,
+and runs it as your wallpaper via mpvpaper.
+
+The one-time render is CPU-bound and depends on the scene, not your monitor:
+fireflies about a minute, galaxy a few, embers and aurora around ten, silk
+about twenty on a modern CPU. After that it's cached and instant.
 
 `render` gives you the file without touching your desktop:
 
@@ -51,8 +55,9 @@ duskpaper render galaxy --res 3840x2160 --seconds 120 --out galaxy.mp4
 ```
 
 Useful knobs on both: `--seed` (a different instance of the scene),
-`--palette` (aurora, ember, ice, gold, nord), `--seconds`, `--fps`,
-`--native` (internal render width; higher = finer detail, slower render).
+`--palette` (aurora, ember, ice, gold, nord; `duskpaper list` shows what each
+scene supports), `--seconds`, `--fps`, `--native` (internal render width;
+higher = finer detail, slower render).
 
 ## Cost while you work
 

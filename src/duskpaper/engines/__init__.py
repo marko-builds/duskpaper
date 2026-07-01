@@ -11,15 +11,21 @@ exactly. No advected state, no drift, no seam.
 
 from . import aurora, embers, fireflies, flow, space
 
-SCENES = {
-    "aurora": (aurora.Sky, "aurora", "northern lights over a dark ridge"),
-    "galaxy": (space.Space, "aurora", "slow drift across a galaxy band"),
-    "silk": (flow.Flow, "ice", "curl-noise silk ribbons, deep blue"),
-    "embers": (embers.Embers, "ember", "warm sparks rising on true black"),
-    "fireflies": (fireflies.Fireflies, "aurora", "firefly meadow under a night sky"),
-}
+ALL_PALETTES = list(aurora.PALETTES)
 
-PALETTES = list(aurora.PALETTES)
+# name -> (engine class, default palette, supported palettes, description)
+SCENES = {
+    "aurora": (aurora.Sky, "aurora", ALL_PALETTES,
+               "northern lights over a dark ridge"),
+    "galaxy": (space.Space, "aurora", ALL_PALETTES,
+               "slow drift across a galaxy band"),
+    "silk": (flow.Flow, "ice", list(flow.GRADIENTS),
+             "curl-noise silk ribbons, deep blue"),
+    "embers": (embers.Embers, "ember", list(embers.EMBERS),
+               "warm sparks rising on true black"),
+    "fireflies": (fireflies.Fireflies, "aurora", [],
+                  "firefly meadow under a night sky (fixed palette)"),
+}
 
 
 def get(name):
