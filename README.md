@@ -85,8 +85,12 @@ exec-once = duskpaper on
 ```
 
 `duskpaper on` is a no-op unless a wallpaper is enabled, so both lines are
-safe to keep permanently. `duskpaper off` restores your theme's static
-wallpaper.
+safe to keep permanently. `duskpaper off` restores your static wallpaper
+exactly as it ran before.
+
+One gotcha: Omarchy's wallpaper-cycle keybind (`omarchy theme bg next`) has
+no hook, so it replaces the animated wallpaper with the theme's static one.
+`duskpaper on` brings it back.
 
 ## License
 
