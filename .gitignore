@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+dist/
+*.mp4
+!previews/*.mp4
+.venv/
