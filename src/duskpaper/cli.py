@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""duskpaper — generative animated wallpapers for Wayland/Hyprland.
+"""duskpaper: generative animated wallpapers for Wayland/Hyprland.
 
-Renders seamless video loops from procedural scene engines (numpy -> ffmpeg)
-and runs them as your desktop wallpaper via mpvpaper. Every wallpaper is
-generated on YOUR machine at YOUR resolution with YOUR seed — no downloads,
+Renders seamless video loops from procedural scene engines (numpy piped into
+ffmpeg) and runs them as your desktop wallpaper via mpvpaper. Every wallpaper
+is generated on YOUR machine at YOUR resolution with YOUR seed. No downloads,
 no video files of someone else's desktop.
 
     duskpaper list
@@ -150,7 +150,7 @@ def start_live(video):
     if not video.is_file():
         sys.exit(f"no such video: {video}")
     if not shutil.which("mpvpaper"):
-        sys.exit("mpvpaper not found — install it first (AUR: mpvpaper)")
+        sys.exit("mpvpaper not found. Install it first (AUR: mpvpaper)")
     if not (STATE / "restore.json").exists():
         _save_daemon_cmdlines()
     _kill("mpvpaper")

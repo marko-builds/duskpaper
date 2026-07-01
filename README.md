@@ -8,13 +8,13 @@ ffmpeg). Change the seed and you get a wallpaper nobody else has.
 
 Five scenes, all built for working on top of: dark, slow, and quiet.
 
-| scene | what you get |
-|---|---|
-| `aurora` | northern lights breathing over a dark ridge |
-| `galaxy` | slow drift across a Milky Way band, twinkling starfield, the odd meteor |
-| `silk` | deep-blue curl-noise ribbons folding through each other |
-| `embers` | warm sparks rising on true black |
-| `fireflies` | a firefly meadow under a night sky |
+| scene | what you get | preview |
+|---|---|---|
+| `aurora` | northern lights breathing over a dark ridge | ![aurora](previews/aurora.gif) |
+| `galaxy` | slow drift across a Milky Way band, twinkling starfield, the odd meteor | ![galaxy](previews/galaxy.gif) |
+| `silk` | deep-blue curl-noise ribbons folding through each other | ![silk](previews/silk.gif) |
+| `embers` | warm sparks rising on true black | ![embers](previews/embers.gif) |
+| `fireflies` | a firefly meadow under a night sky | ![fireflies](previews/fireflies.gif) |
 
 Every loop is seamless by construction, not by luck. All motion in the engines
 is an integer-frequency function of the loop phase, so the last frame flows

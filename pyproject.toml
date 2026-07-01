@@ -1,7 +1,7 @@
 [project]
 name = "duskpaper"
 version = "0.1.0"
-description = "Generative animated wallpapers for Wayland/Hyprland — rendered on your machine, at your resolution, with your seed"
+description = "Generative animated wallpapers for Wayland/Hyprland, rendered on your machine, at your resolution, with your seed"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
