@@ -94,11 +94,21 @@ def render(scene, out, width, height, seconds=120, fps=30, native=1280,
 
     out = Path(out)
     out.parent.mkdir(parents=True, exist_ok=True)
+    # tide's large, smooth moon gradient bands in 8-bit h264, and the encoder
+    # re-quantizes the banding differently each frame so the glow visibly
+    # flickers. No crf fixes it (8-bit is the ceiling); HEVC 10-bit adds the
+    # precision that removes the banding. Main10 is hardware-decoded on any
+    # modern GPU, so the wallpaper stays light. Other scenes keep 8-bit h264.
+    if scene == "tide":
+        vcodec = ["-c:v", "libx265", "-pix_fmt", "yuv420p10le",
+                  "-x265-params", "log-level=none", "-tag:v", "hvc1"]
+    else:
+        vcodec = ["-c:v", "libx264", "-pix_fmt", "yuv420p"]
     ff = subprocess.Popen(
         ["ffmpeg", "-y", "-loglevel", "error",
          "-f", "rawvideo", "-pixel_format", "rgb24",
          "-video_size", f"{W}x{H}", "-framerate", str(fps), "-i", "-",
-         "-an", "-c:v", "libx264", "-pix_fmt", "yuv420p",
+         "-an", *vcodec,
          "-crf", str(crf), "-preset", "medium", "-movflags", "+faststart",
          str(out)],
         stdin=subprocess.PIPE)
