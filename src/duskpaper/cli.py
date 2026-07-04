@@ -36,7 +36,7 @@ WALLPAPER_DAEMONS = ("swaybg", "hyprpaper", "swww-daemon", "wpaperd")
 
 # rough render minutes per scene at the default --native 1280 (scene dominates
 # cost, not monitor resolution; scale with your CPU's single-core speed)
-RENDER_MINUTES = {"fireflies": 1, "galaxy": 3, "embers": 10, "aurora": 12, "silk": 20}
+RENDER_MINUTES = {"fireflies": 1, "galaxy": 3, "tide": 8, "embers": 10, "aurora": 12, "silk": 20}
 
 
 # ── monitor / process helpers ────────────────────────────────────────────────

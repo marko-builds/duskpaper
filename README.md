@@ -6,7 +6,7 @@ No video downloads. duskpaper renders seamless loops on your machine, at your
 monitor's exact resolution, from procedural scene engines (numpy piped into
 ffmpeg). Change the seed and you get a wallpaper nobody else has.
 
-Five scenes, all built for working on top of: dark, slow, and quiet.
+Six scenes, all built for working on top of: dark, slow, and quiet.
 
 | scene | what you get | preview |
 |---|---|---|
@@ -15,6 +15,7 @@ Five scenes, all built for working on top of: dark, slow, and quiet.
 | `silk` | deep-blue curl-noise ribbons folding through each other | ![silk](previews/silk.gif) |
 | `embers` | warm sparks rising on true black | ![embers](previews/embers.gif) |
 | `fireflies` | a firefly meadow under a night sky | ![fireflies](previews/fireflies.gif) |
+| `tide` | a low moon laying a glade of light on slow, dark swell | ![tide](previews/tide.gif) |
 
 Every loop is seamless by construction, not by luck. All motion in the engines
 is an integer-frequency function of the loop phase, so the last frame flows
@@ -45,8 +46,8 @@ compositors pass `--res WxH` explicitly), renders the loop once, caches it,
 and runs it as your wallpaper via mpvpaper.
 
 The one-time render is CPU-bound and depends on the scene, not your monitor:
-fireflies about a minute, galaxy a few, embers and aurora around ten, silk
-about twenty on a modern CPU. After that it's cached and instant.
+fireflies about a minute, galaxy a few, tide around eight, embers and aurora
+around ten, silk about twenty on a modern CPU. After that it's cached and instant.
 
 `render` gives you the file without touching your desktop:
 

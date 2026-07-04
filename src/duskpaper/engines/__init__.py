@@ -9,7 +9,7 @@ integer-frequency function of tau = 2*pi*t/period, so frame(0) == frame(period)
 exactly. No advected state, no drift, no seam.
 """
 
-from . import aurora, embers, fireflies, flow, space
+from . import aurora, embers, fireflies, flow, space, tide
 
 ALL_PALETTES = list(aurora.PALETTES)
 
@@ -25,6 +25,8 @@ SCENES = {
                "warm sparks rising on true black"),
     "fireflies": (fireflies.Fireflies, "aurora", [],
                   "firefly meadow under a night sky (fixed palette)"),
+    "tide": (tide.Tide, "ice", list(tide.TIDES),
+             "a moonlit sea, glade of light on slow swell"),
 }
 
 
