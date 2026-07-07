@@ -36,7 +36,8 @@ WALLPAPER_DAEMONS = ("swaybg", "hyprpaper", "swww-daemon", "wpaperd")
 
 # rough render minutes per scene at the default --native 1280 (scene dominates
 # cost, not monitor resolution; scale with your CPU's single-core speed)
-RENDER_MINUTES = {"fireflies": 1, "galaxy": 3, "tide": 8, "embers": 10, "aurora": 12, "silk": 20}
+RENDER_MINUTES = {"fireflies": 1, "galaxy": 3, "tide": 8, "embers": 10, "aurora": 12,
+                  "silk": 20, "terminal": 25, "caustics": 35}
 
 
 # ── monitor / process helpers ────────────────────────────────────────────────
@@ -80,7 +81,7 @@ def _detached(cmd):
 # ── rendering ────────────────────────────────────────────────────────────────
 
 def render(scene, out, width, height, seconds=120, fps=30, native=1280,
-           crf=18, seed=7, palette=None, quiet=False):
+           crf=18, seed=7, palette=None, calm=False, quiet=False):
     """Render one seamless loop to `out` (h264 yuv420p mp4)."""
     cls, default_pal, _, _ = engines.get(scene)
     palette = palette or default_pal
@@ -88,7 +89,7 @@ def render(scene, out, width, height, seconds=120, fps=30, native=1280,
     nw = min(native, W)
     nh = (round(nw * H / W) // 2) * 2
     n_frames = int(round(seconds * fps))
-    eng = cls(cols=nw, rows=nh // 2, loop_period=n_frames / fps,
+    eng = cls(cols=nw, rows=nh // 2, calm=calm, loop_period=n_frames / fps,
               meteors=(2 if scene == "galaxy" else 0),
               meteor_seed=seed, palette=palette)
 
@@ -224,6 +225,8 @@ def main():
         p.add_argument("--crf", type=int, default=18)
         p.add_argument("--seed", type=int, default=7)
         p.add_argument("--palette", default=None)
+        p.add_argument("--calm", action="store_true",
+                       help="gentler motion variant of the scene")
         if name == "render":
             p.add_argument("--out", default=None)
 
@@ -251,11 +254,12 @@ def main():
         W, H = _parse_res(a.res)
         pal = a.palette or default_pal
         default_out = (CACHE / f"{a.scene}_{pal}_s{a.seed}_{W}x{H}"
-                               f"_{a.seconds:g}s_{a.fps}f_n{a.native}_c{a.crf}.mp4")
+                               f"_{a.seconds:g}s_{a.fps}f_n{a.native}_c{a.crf}"
+                               f"{'_calm' if a.calm else ''}.mp4")
         out = Path(getattr(a, "out", None) or default_out)
         if a.cmd == "render" or not out.exists():
             render(a.scene, out, W, H, a.seconds, a.fps, a.native,
-                   a.crf, a.seed, pal)
+                   a.crf, a.seed, pal, a.calm)
             print(f"wrote {out}")
         if a.cmd == "set":
             start_live(out)
