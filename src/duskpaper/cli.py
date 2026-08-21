@@ -144,6 +144,70 @@ def render(scene, out, width, height, seconds=120, fps=30, native=1280,
     return out
 
 
+def safe_state_path(path):
+    """True when `path` is safe to write: neither it nor its parent is a symlink.
+
+    An ordinary write follows a symlink and truncates its target. Probed
+    2026-08-21: with restore.json symlinked at a text file, write_text()
+    returned normally, the victim held duskpaper's JSON, and the symlink
+    survived. Same class the Omarchy marketplace has been flagging on plugin
+    state writes.
+    """
+    path = Path(path)
+    return not path.is_symlink() and not path.parent.is_symlink()
+
+
+def _prepare_state_dir():
+    """Create STATE 0700, or return False if the path is unsafe to write."""
+    if STATE.is_symlink() or STATE.parent.is_symlink():
+        return False
+    STATE.mkdir(parents=True, exist_ok=True, mode=0o700)
+    try:
+        # An earlier build created this with the umask default, so creating it
+        # correctly is not enough: tighten what is already there.
+        STATE.chmod(0o700)
+    except OSError:
+        return False
+    return True
+
+
+def _write_state(name, text):
+    """Write one state file 0600, refusing a symlinked path. True when written."""
+    if not _prepare_state_dir():
+        return False
+    target = STATE / name
+    if not safe_state_path(target):
+        return False
+    target.write_text(text)
+    try:
+        target.chmod(0o600)
+    except OSError:
+        pass
+    return True
+
+
+def valid_restore_commands(data):
+    """The restore commands in `data` that duskpaper is allowed to run.
+
+    restore.json exists for exactly one purpose: relaunching the static
+    wallpaper daemon that `set` stopped. It was executed with no check but
+    `shutil.which(cmd[0])`, so any command on PATH, with any arguments, ran as
+    the user if the file could be influenced. The daemon list is the allowlist.
+    """
+    if not isinstance(data, list):
+        return []
+    out = []
+    for cmd in data:
+        if not isinstance(cmd, list) or not cmd:
+            continue
+        if not all(isinstance(a, str) for a in cmd):
+            continue
+        if Path(cmd[0]).name not in WALLPAPER_DAEMONS:
+            continue
+        out.append(cmd)
+    return out
+
+
 def _omarchy_background():
     """Omarchy's current-theme background, whichever layout this version uses."""
     for base in OMARCHY_CURRENT:
@@ -186,8 +250,7 @@ def _save_daemon_cmdlines():
             except OSError:
                 pass
     if saved:
-        STATE.mkdir(parents=True, exist_ok=True)
-        (STATE / "restore.json").write_text(json.dumps(saved))
+        _write_state("restore.json", json.dumps(saved))
     return saved
 
 
@@ -203,9 +266,8 @@ def start_live(video):
     for name in WALLPAPER_DAEMONS:
         _kill(name)
     _detached(["mpvpaper", "-p", "-o", MPV_OPTS, "*", str(video)])
-    STATE.mkdir(parents=True, exist_ok=True)
-    (STATE / "video").write_text(str(video))
-    (STATE / "enabled").touch()
+    _write_state("video", str(video))
+    _write_state("enabled", "")
 
 
 def stop_live():
@@ -213,12 +275,18 @@ def stop_live():
     _kill("mpvpaper")
     # restore the static wallpaper exactly as it ran before `set`
     restore = STATE / "restore.json"
-    if restore.exists():
-        for cmd in json.loads(restore.read_text()):
+    if restore.exists() and safe_state_path(restore):
+        try:
+            data = json.loads(restore.read_text())
+        except (ValueError, OSError):
+            data = []
+        commands = valid_restore_commands(data)
+        for cmd in commands:
             if shutil.which(cmd[0]):
                 _detached(cmd)
-        restore.unlink()
-        return
+        restore.unlink(missing_ok=True)
+        if commands:
+            return
     # Omarchy 4: the shell's own background never stopped, so killing mpvpaper
     # has already put it back. Relaunching a daemon here would cover it.
     if _shell_draws_background():

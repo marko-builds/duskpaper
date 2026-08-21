@@ -86,9 +86,52 @@ exactly as `omarchy.background` does.
   grabs at whatever size it gets and resizes with `magick` afterwards.
 - Rebuild the shader (qsb is not on PATH): `/usr/lib/qt6/bin/qsb --glsl
   "100 es,120,150" --hlsl 50 --msl 12 -o shaders/aurora.frag.qsb shaders/aurora.frag`
-- `quickshell -p selftest.qml` (21 checks, exit 0/1) and
+- `quickshell -p selftest.qml` (22 checks, exit 0/1),
+  `python -m duskpaper.selftest` (13 checks, state-handling guards), and
   `quickshell -p preview-render.qml` (writes `preview.png`) both run standalone
   against the live compositor without touching the installed shell.
+
+## Pre-listing security audit (2026-08-21)
+
+Run against the checklist the lodestar hardening session derived from the
+marketplace's own review record. Four classes applied, three fired.
+
+- **Prototype keys in a config lookup (fired).** `paletteTable[name] !== undefined`
+  is true for every key inherited from `Object.prototype`, so `palette: "__proto__"`
+  (also `constructor`, `toString`, `hasOwnProperty`, `valueOf`) passed the guard
+  and made `pal` the prototype object: measured as a TypeError on every colour
+  uniform in the shipping Qt V4 engine. Use
+  `Object.prototype.hasOwnProperty.call()`. **Borealis has the same line and has
+  not been fixed** (`Borealis.qml:39`); it is frozen pending marketplace approval.
+- **Shared /tmp path in a harness (fired).** `selftest.qml` wrote a fixed
+  `/tmp/duskpaper-selftest-grab.png`, precreatable by anyone. This is the class
+  Porthole was flagged for (#961). Harness files go under `XDG_RUNTIME_DIR` and
+  the harness refuses to run without it. That refusal cannot be exercised in a
+  real session, since a Wayland session cannot start without the variable: it
+  fails closed and is cheap, not tested.
+- **Symlink-following state writes and an unrestricted restore runner (fired, CLI
+  side).** Probed: with `restore.json` symlinked at a text file, `write_text()`
+  returned normally, the victim held duskpaper's JSON, and the symlink survived.
+  Worse, `stop_live()` executed every command in that file gated only by
+  `shutil.which`, so any binary on PATH with any arguments would run. The file
+  exists to relaunch a wallpaper daemon, so `WALLPAPER_DAEMONS` is now the
+  allowlist, state writes refuse symlinked paths, and the dir/files are 0700/0600.
+  `python -m duskpaper.selftest` (13 checks) covers it, every guard
+  mutation-checked: delete it, watch the suite go red.
+- **Rich-text injection (N/A, not passed).** The plugin has zero `Text` elements,
+  so the most-flagged marketplace class has no surface here. Recorded as N/A so a
+  later delegate that adds text knows the rule still applies: `textFormat:
+  Text.PlainText` on every `Text`, not just the ones binding untrusted data.
+
+**The property worth preserving: the shipped plugin has no write and no exec
+surface.** No `FileView`, no `Process`, no `execDetached`, no URL sink. Its only
+inputs are its own `shell.json` entry (validated and clamped), Hyprland workspace
+state compared against constants, and `Quickshell.screens`. The single most-flagged
+behavioural finding across recent submissions is a plugin writing user config
+without consent; this one structurally cannot. Keep it that way.
+
+Known limit, not a defect: the occlusion pause reads `hasfullscreen`, so a
+maximised-but-not-fullscreen window covers the wallpaper while it keeps painting.
 
 ## Related
 

@@ -56,8 +56,15 @@ Item {
     return null
   }
 
-  readonly property string palette: (entry && paletteTable[entry.palette] !== undefined)
-                                    ? entry.palette : "aurora"
+  readonly property string palette: {
+    var name = entry ? String(entry.palette === undefined ? "" : entry.palette) : ""
+    // hasOwnProperty, never `paletteTable[name] !== undefined`. Every key on
+    // Object.prototype ("__proto__", "constructor", "toString",
+    // "hasOwnProperty", "valueOf") answers a plain lookup, so the loose test
+    // accepts all five and hands `pal` the prototype object, whose ramp is
+    // undefined: measured as a TypeError on every colour uniform.
+    return Object.prototype.hasOwnProperty.call(paletteTable, name) ? name : "aurora"
+  }
   readonly property var pal: paletteTable[palette]
 
   // A wallpaper is looked at all day, not summoned for a moment, so it runs

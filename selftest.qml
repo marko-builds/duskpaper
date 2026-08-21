@@ -51,7 +51,13 @@ ShellRoot {
   // by injecting the const array from Borealis's gotcha list: qsb compiled it
   // clean, ShaderEffect reported Compiled, the RHI logged C7516, and the
   // surface painted nothing. Grabbing the pixels is what tells the difference.
-  property string grabPath: "/tmp/duskpaper-selftest-grab.png"
+  // Never a shared, precreatable path. A fixed /tmp name is the class the
+  // marketplace flagged Porthole for (#961): anyone can create it first, and
+  // the harness then writes through whatever is waiting there. XDG_RUNTIME_DIR
+  // is per-user and 0700, and a Wayland session cannot start without it, so
+  // refusing when it is unset costs nothing real.
+  readonly property string runtimeDir: Quickshell.env("XDG_RUNTIME_DIR") || ""
+  readonly property string grabPath: runtimeDir + "/duskpaper-selftest-grab.png"
 
   Process {
     id: pixels
@@ -72,6 +78,12 @@ ShellRoot {
   }
 
   function grabShader() {
+    if (harness.runtimeDir === "") {
+      harness.log("FAIL: XDG_RUNTIME_DIR is unset; refusing to write a harness file")
+      harness.failed = true
+      harness.finish()
+      return
+    }
     if (!plugin.shaderItem) {
       harness.check("shader-item-exposed", false)
       layers.running = true
@@ -163,6 +175,24 @@ ShellRoot {
       }
       if (t === 11) harness.check("other-plugin-entry-ignored", plugin.palette === "aurora")
 
+      // Prototype keys. `paletteTable[name] !== undefined` is true for every
+      // key inherited from Object.prototype, so a config naming one passes the
+      // guard and `pal` becomes Object.prototype, whose `.c` is undefined.
+      // Same class as lodestar F4, in a lookup rather than a parse.
+      if (t === 20) {
+        var poisons = ["__proto__", "constructor", "toString", "hasOwnProperty", "valueOf"]
+        var leaked = []
+        for (var pi = 0; pi < poisons.length; pi++) {
+          stubShell.shellConfig = { plugins: [
+            { id: "io.github.marko-builds.duskpaper", palette: poisons[pi] }] }
+          if (plugin.palette !== "aurora") leaked.push(poisons[pi] + "->" + plugin.palette)
+          else if (!plugin.pal || !plugin.pal.c) leaked.push(poisons[pi] + "->no-ramp")
+        }
+        if (leaked.length) harness.log("leaked: " + leaked.join(", "))
+        harness.check("prototype-keys-rejected", leaked.length === 0)
+        stubShell.shellConfig = { plugins: [] }
+      }
+
       // Occlusion contract, asserted SYNCHRONOUSLY. anyFullscreen is owned by
       // live Hyprland events: a spawned process firing openwindow mid-test made
       // refreshOcclusion correctly clear a flag the test had just set, and the
@@ -180,17 +210,17 @@ ShellRoot {
       // which runs through the same Timer binding with no external owner.
 
       // speed 0 is a documented freeze, not a slow crawl
-      if (t === 18) {
+      if (t === 21) {
         stubShell.shellConfig = { plugins: [
           { id: "io.github.marko-builds.duskpaper", speed: 0 }] }
       }
-      if (t === 19) harness.timeAtSpeedZero = plugin.clock
-      if (t === 22) {
+      if (t === 22) harness.timeAtSpeedZero = plugin.clock
+      if (t === 25) {
         harness.check("speed-zero-freezes",
                       plugin.clock === harness.timeAtSpeedZero)
       }
 
-      if (t === 23) harness.grabShader()
+      if (t === 26) harness.grabShader()
 
       if (t >= 40) {
         harness.log("FAIL: selftest timed out")
