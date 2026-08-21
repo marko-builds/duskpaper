@@ -1,8 +1,14 @@
 .gitignore
 .publish-allowlist
 CLAUDE.md
+Duskpaper.qml
 LICENSE
 README.md
+manifest.json
+preview-render.qml
+preview.png
 previews
 pyproject.toml
+selftest.qml
+shaders
 src

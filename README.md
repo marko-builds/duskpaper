@@ -8,6 +8,10 @@ ffmpeg). Change the seed and you get a wallpaper nobody else has.
 
 Six scenes, all built for working on top of: dark, slow, and quiet.
 
+Two ways to run it. The CLI renders a loop and plays it as your wallpaper, which
+works on any wlroots compositor. On Omarchy 4 there is also a plugin that skips
+the video entirely and runs the shader live. Both are below.
+
 | scene | what you get | preview |
 |---|---|---|
 | `aurora` | northern lights breathing over a dark ridge | ![aurora](previews/aurora.gif) |
@@ -69,7 +73,55 @@ higher = finer detail, slower render).
 * mpvpaper runs with auto-pause: when a fullscreen window covers the
   wallpaper, playback pauses and the cost drops to about zero.
 
+## The Omarchy 4 plugin
+
+![aurora](preview.png)
+
+On Omarchy 4 ("Quattro") the desktop background is drawn inside `omarchy-shell`,
+which means a plugin can draw it instead. duskpaper ships one: the same aurora as
+`duskpaper set aurora`, run as a fragment shader every frame rather than
+pre-rendered to video. No render wait, no cache, no mpvpaper, and it picks up
+your monitor at whatever resolution it is.
+
+```sh
+omarchy plugin add https://github.com/marko-builds/duskpaper.git
+```
+
+Plugins land disabled. Enable it by adding an entry to the `plugins` array in
+`~/.config/omarchy/shell.json`:
+
+```json
+{ "plugins": [ { "id": "io.github.marko-builds.duskpaper" } ] }
+```
+
+Three optional keys on that same entry, applied live when you save the file:
+
+| key | default | what it does |
+|---|---|---|
+| `palette` | `aurora` | aurora, ember, gold, nord, ice |
+| `speed` | `0.6` | 0 to 4. A wallpaper wants slower than a screensaver. `0` freezes it on a still frame |
+| `fps` | `30` | 1 to 60. A frame budget, not a display rate |
+
+Anything out of range falls back to the default rather than being applied.
+
+It stops animating entirely while a fullscreen window covers it, which is the
+same idea as mpvpaper's auto-pause and the reason it is affordable to leave on.
+
+Requires Omarchy 4 and its shell. Nothing else, no dependencies, no network. The
+plugin and the CLI are independent: you can run either without the other.
+
+Remove it with:
+
+```sh
+omarchy plugin remove io.github.marko-builds.duskpaper
+```
+
+and delete its entry from `shell.json`.
+
 ## Omarchy / theme integration
+
+This section is about the CLI. The plugin above needs none of it, because the
+shell is already the thing drawing the background.
 
 On [Omarchy](https://omarchy.org), the desktop repaints its background on every
 theme change, which covers the animated wallpaper. Two lines fix that.

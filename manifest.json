@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.marko-builds.duskpaper",
+  "name": "duskpaper",
+  "version": "0.1.0",
+  "author": "Marko Stankovic",
+  "description": "A live shader wallpaper: procedural aurora painted every frame, no video, no render wait",
+  "kinds": [
+    "service"
+  ],
+  "entryPoints": {
+    "service": "Duskpaper.qml"
+  }
+}

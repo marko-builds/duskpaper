@@ -49,6 +49,47 @@ so the assert is the check, not the eyeball.
   Omarchy 4. A hook should read the theme slug from `$1` (which `omarchy-hook theme-set`
   passes) rather than either path, and `_omarchy_background()` tries both.
 
+## The Omarchy 4 plugin (`Duskpaper.qml`, `manifest.json`, `shaders/`)
+
+A `service`-kind plugin that paints the desktop background with the aurora
+fragment shader. `shell.qml`'s `_syncServices` loads third-party services
+generically, so a plugin can own a `PanelWindow` at `WlrLayer.Background`
+exactly as `omarchy.background` does.
+
+- **A second background-layer surface stacks ABOVE `omarchy-background`.** The
+  whole plugin rests on this. Measured 2026-08-21 with an opaque probe: 91908
+  desktop pixels changed colour, and `hyprctl layers` shows level 0 ordered
+  `[omarchy-background, duskpaper]` (later in the array is on top). `selftest.qml`
+  re-checks it every run, because if it ever flips the wallpaper is invisible
+  while every other check still passes.
+- **`ShaderEffect.status === Compiled` is NOT evidence the shader runs.**
+  Calibrated by injecting Borealis's const-array gotcha: qsb compiled it clean,
+  `status` reported Compiled, the RHI logged `C7516`, and the surface painted
+  nothing. Only `shader-paints-pixels` caught it (`sd=0 max=0` against `sd=0.07
+  max=1` for a live one). Grab the pixels; never trust the status alone.
+- **One clock on the root, never one per panel.** `Variants` builds a panel per
+  screen, and a `Timer` inside it gives each monitor its own clock. They drift
+  apart within seconds, so a two-monitor desktop shows the same aurora at two
+  different moments.
+- **Never park the panel with `updatesEnabled: false`.** The background layer has
+  been observed to lose its committed buffer while parked, leaving a black
+  desktop until the shell restarts (`omarchy.background` carries the same note).
+  Idle by stopping the clock, which stops repaints without unmapping anything.
+- **`anyFullscreen` is owned by live Hyprland events.** A test that sets it by
+  hand and asserts a few ticks later is flaky: a spawned process fired
+  `openwindow`, `refreshOcclusion` correctly cleared the flag, and the check went
+  red for an environment reason. Assert the derived `animating` gate
+  synchronously instead.
+- **`grabToImage` scales its request by the monitor's scale factor, and
+  `devicePixelRatio` does not report that factor.** A request for 2560 came back
+  4096 while the property said 2 (the applied factor was 1.6). `preview-render.qml`
+  grabs at whatever size it gets and resizes with `magick` afterwards.
+- Rebuild the shader (qsb is not on PATH): `/usr/lib/qt6/bin/qsb --glsl
+  "100 es,120,150" --hlsl 50 --msl 12 -o shaders/aurora.frag.qsb shaders/aurora.frag`
+- `quickshell -p selftest.qml` (21 checks, exit 0/1) and
+  `quickshell -p preview-render.qml` (writes `preview.png`) both run standalone
+  against the live compositor without touching the installed shell.
+
 ## Related
 
 Borealis (`~/Projects/borealis`) is the same aurora math as a live GPU fragment shader
