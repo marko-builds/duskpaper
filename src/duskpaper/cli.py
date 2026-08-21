@@ -34,6 +34,13 @@ MPV_OPTS = "no-audio loop hwdec=auto"
 # static-wallpaper daemons we stop on `set` and restore on `off`
 WALLPAPER_DAEMONS = ("swaybg", "hyprpaper", "swww-daemon", "wpaperd")
 
+# Omarchy's current-theme marker. Omarchy 4 ("Quattro") moved it out of the
+# config tree; the old path is kept as a fallback for Omarchy 3 and earlier.
+OMARCHY_CURRENT = (
+    Path.home() / ".local/state/omarchy/current",
+    Path.home() / ".config/omarchy/current",
+)
+
 # rough render minutes per scene at the default --native 1280 (scene dominates
 # cost, not monitor resolution; scale with your CPU's single-core speed)
 RENDER_MINUTES = {"fireflies": 1, "galaxy": 3, "tide": 8, "embers": 10, "aurora": 12,
@@ -137,6 +144,34 @@ def render(scene, out, width, height, seconds=120, fps=30, native=1280,
     return out
 
 
+def _omarchy_background():
+    """Omarchy's current-theme background, whichever layout this version uses."""
+    for base in OMARCHY_CURRENT:
+        bg = base / "background"
+        if bg.exists():
+            return bg
+    return None
+
+
+def _shell_draws_background():
+    """True when omarchy-shell is painting the desktop background itself.
+
+    Omarchy 4 draws the background inside the shell process instead of running
+    a separate daemon, so there is nothing to stop on `set` and nothing to
+    relaunch on `off`: killing mpvpaper reveals it again. Matched on the
+    cmdline rather than the process name, so a stray `quickshell -p foo.qml`
+    (a plugin selftest, say) is not mistaken for the shell.
+    """
+    for pid in _pids("quickshell"):
+        try:
+            cmd = Path(f"/proc/{pid}/cmdline").read_bytes().decode(errors="replace")
+        except OSError:
+            continue
+        if "omarchy/shell" in cmd:
+            return True
+    return False
+
+
 # ── live wallpaper management ────────────────────────────────────────────────
 
 def _save_daemon_cmdlines():
@@ -184,9 +219,13 @@ def stop_live():
                 _detached(cmd)
         restore.unlink()
         return
+    # Omarchy 4: the shell's own background never stopped, so killing mpvpaper
+    # has already put it back. Relaunching a daemon here would cover it.
+    if _shell_draws_background():
+        return
     # fallback: Omarchy's current-theme wallpaper, if that system is present
-    bg = Path.home() / ".config/omarchy/current/background"
-    if bg.exists() and shutil.which("swaybg"):
+    bg = _omarchy_background()
+    if bg and shutil.which("swaybg"):
         _detached(["swaybg", "-i", str(bg), "-m", "fill"])
 
 

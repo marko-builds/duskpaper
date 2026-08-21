@@ -1,0 +1,8 @@
+.gitignore
+.publish-allowlist
+CLAUDE.md
+LICENSE
+README.md
+previews
+pyproject.toml
+src

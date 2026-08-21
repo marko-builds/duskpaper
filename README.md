@@ -24,8 +24,10 @@ seam.
 
 ## Install
 
-You need `ffmpeg` and [`mpvpaper`](https://github.com/GhostNaN/mpvpaper)
-(AUR: `mpvpaper`).
+Runtime dependencies: `ffmpeg` (rendering) and
+[`mpvpaper`](https://github.com/GhostNaN/mpvpaper) (playback, AUR: `mpvpaper`).
+Python 3.11+, numpy and Pillow come in with the install. Nothing else, and
+nothing is downloaded at runtime.
 
 ```sh
 uv tool install git+https://github.com/marko-builds/duskpaper
@@ -69,29 +71,67 @@ higher = finer detail, slower render).
 
 ## Omarchy / theme integration
 
-On [Omarchy](https://omarchy.org), theme switches relaunch swaybg, which
-covers the animated wallpaper. Two lines fix that.
+On [Omarchy](https://omarchy.org), the desktop repaints its background on every
+theme change, which covers the animated wallpaper. Two lines fix that.
 
-Restore after theme changes, in `~/.config/omarchy/hooks/theme-set.d/50-duskpaper`:
+Restore after a theme change, in
+`~/.config/omarchy/hooks/theme-set.d/50-duskpaper` (make it executable):
 
 ```sh
 #!/bin/bash
 duskpaper on
 ```
 
-Start on login, in `~/.config/hypr/autostart.conf`:
+Start on login. On Omarchy 4 ("Quattro"), in `~/.config/hypr/autostart.lua`:
+
+```lua
+o.exec_on_start("duskpaper on")
+```
+
+On Omarchy 3 and earlier, in `~/.config/hypr/autostart.conf`:
 
 ```
 exec-once = duskpaper on
 ```
 
-`duskpaper on` is a no-op unless a wallpaper is enabled, so both lines are
-safe to keep permanently. `duskpaper off` restores your static wallpaper
-exactly as it ran before.
+`duskpaper on` is a no-op unless a wallpaper is enabled, so both lines are safe
+to keep permanently. `duskpaper off` puts your static wallpaper back.
 
-One gotcha: Omarchy's wallpaper-cycle keybind (`omarchy theme bg next`) has
-no hook, so it replaces the animated wallpaper with the theme's static one.
-`duskpaper on` brings it back.
+Three things worth knowing about Omarchy 4 specifically:
+
+* The background is painted inside `omarchy-shell` now, not by a separate
+  swaybg process. duskpaper detects that and leaves the shell alone, so `off`
+  uncovers the background that was underneath all along.
+* Theme hooks get the theme slug as `$1`, so one hook can pick a scene per
+  theme instead of restoring whatever ran last:
+
+  ```sh
+  #!/bin/bash
+  case "$1" in
+    nord)   duskpaper set silk --palette nord ;;
+    *)      duskpaper on ;;
+  esac
+  ```
+
+* The current-theme marker moved from `~/.config/omarchy/current/` to
+  `~/.local/state/omarchy/current/`. Reading `$1` instead of either path keeps
+  a hook correct on both versions.
+
+On Omarchy 3, the wallpaper-cycle keybind (`omarchy theme bg next`) has no hook
+and replaces the animated wallpaper with the theme's static one. `duskpaper on`
+brings it back.
+
+## Removing it
+
+```sh
+duskpaper off                                          # restore your wallpaper
+uv tool uninstall duskpaper                            # or: pipx uninstall duskpaper
+rm -rf ~/.local/share/duskpaper                        # cached renders
+rm -rf ~/.config/duskpaper                             # state
+rm -f ~/.config/omarchy/hooks/theme-set.d/50-duskpaper # the theme hook, if you added it
+```
+
+Then drop the `duskpaper on` line from your autostart file.
 
 ## License
 
