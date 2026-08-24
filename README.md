@@ -6,7 +6,7 @@ No video downloads. duskpaper renders seamless loops on your machine, at your
 monitor's exact resolution, from procedural scene engines (numpy piped into
 ffmpeg). Change the seed and you get a wallpaper nobody else has.
 
-Six scenes, all built for working on top of: dark, slow, and quiet.
+Eight scenes, all built for working on top of: dark, slow, and quiet.
 
 Two ways to run it. The CLI renders a loop and plays it as your wallpaper, which
 works on any wlroots compositor. On Omarchy 4 there is also a plugin that skips
@@ -20,6 +20,8 @@ the video entirely and runs the shader live. Both are below.
 | `embers` | warm sparks rising on true black | ![embers](previews/embers.gif) |
 | `fireflies` | a firefly meadow under a night sky | ![fireflies](previews/fireflies.gif) |
 | `tide` | a low moon laying a glade of light on slow, dark swell | ![tide](previews/tide.gif) |
+| `terminal` | falling code rain, unreadable monospace glyphs | ![terminal](previews/terminal.gif) |
+| `caustics` | underwater caustic light-web on the sea floor | ![caustics](previews/caustics.gif) |
 
 Every loop is seamless by construction, not by luck. All motion in the engines
 is an integer-frequency function of the loop phase, so the last frame flows
@@ -53,7 +55,8 @@ and runs it as your wallpaper via mpvpaper.
 
 The one-time render is CPU-bound and depends on the scene, not your monitor:
 fireflies about a minute, galaxy a few, tide around eight, embers and aurora
-around ten, silk about twenty on a modern CPU. After that it's cached and instant.
+around ten, silk about twenty, terminal about twenty-five, caustics around
+thirty-five on a modern CPU. After that it's cached and instant.
 
 `render` gives you the file without touching your desktop:
 
